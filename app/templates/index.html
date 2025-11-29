@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>User Lookup</title>
+</head>
+<body>
+  <h1>User Lookup</h1>
+  <form method="get" action="/">
+    <input name="q" placeholder="username" value="{{ q }}">
+    <button type="submit">Search</button>
+  </form>
+
+  {% if users %}
+    <h2>Results</h2>
+    <ul>
+      {% for u in users %}
+        <li>{{ u['username'] }} – {{ u['email'] }}</li>
+      {% endfor %}
+    </ul>
+  {% elif q %}
+    <p>No users found.</p>
+  {% endif %}
+</body>
+</html>
