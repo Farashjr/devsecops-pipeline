@@ -23,7 +23,9 @@ jobs:
           pip install pytest bandit pip-audit
 
       - name: Run unit tests
-        run: pytest app/tests
+        run: |
+          export PYTHONPATH="$PYTHONPATH:$(pwd)"
+          pytest app/tests
 
       - name: Run Bandit (SAST)
         run: bandit -r app -f json -o bandit-report.json
@@ -71,7 +73,7 @@ jobs:
 
     services:
       web:
-        image: devsecops-app:ci    # Uses built image
+        image: devsecops-app:ci
         ports:
           - 5000:5000
         options: >-
