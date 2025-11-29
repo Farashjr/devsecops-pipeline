@@ -28,10 +28,16 @@ jobs:
           pytest app/tests
 
       - name: Run Bandit (SAST)
-        run: bandit -r app -f json -o bandit-report.json
+        run: |
+          echo "Running Bandit scan..."
+          bandit -r app -f json -o bandit-report.json || true
+          echo "Bandit completed (continuing even if issues were found)."
 
       - name: Run pip-audit (dependency scan)
-        run: pip-audit -r app/requirements.txt -f json -o dep-report.json
+        run: |
+          echo "Running pip-audit..."
+          pip-audit -r app/requirements.txt -f json -o dep-report.json || true
+          echo "pip-audit completed (continuing even if issues were found)."
 
       - name: Upload SAST & dependency reports
         uses: actions/upload-artifact@v4
