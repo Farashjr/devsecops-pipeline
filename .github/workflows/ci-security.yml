@@ -102,7 +102,7 @@ jobs:
             --network="host" \
             -v ${{ github.workspace }}/zap-config.yaml:/zap/wrk/zap-config.yaml \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk/zap-reports \
-            owasp/zap2docker-stable zap.sh \
+            ghcr.io/zaproxy/zaproxy:stable zap.sh \
             -cmd -autorun /zap/wrk/zap-config.yaml
 
       - name: Stop containers
@@ -206,7 +206,7 @@ jobs:
             === Summary ===
             $(cat security-summary.txt)
 
-            📁 Download full security reports:
+             Download full security reports:
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             Stay safe and secure.
