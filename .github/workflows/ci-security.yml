@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r app/requirements.txt
-          pip install pytest bandit pip-audit
+          pip install pytest bandit pip-audit jq
 
       - name: Run unit tests
         run: |
@@ -76,33 +76,39 @@ jobs:
   zap-dast:
     runs-on: ubuntu-latest
     needs: build-test-sast
-
-    services:
-      web:
-        image: devsecops-app:ci
-        ports:
-          - 5000:5000
-        options: >-
-          --health-cmd "curl --fail http://localhost:5000/health || exit 1"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image again for service use
+      - name: Build Docker image
         run: docker build -t devsecops-app:ci .
+
+      - name: Run app container
+        run: |
+          docker run -d --name web -p 5000:5000 devsecops-app:ci
+          echo "Waiting for app to become healthy..."
+          for i in {1..10}; do
+            if curl --fail http://localhost:5000/health; then
+              echo "App is healthy!"
+              break
+            fi
+            echo "Waiting..."
+            sleep 3
+          done
 
       - name: Run OWASP ZAP DAST scan
         run: |
           mkdir -p zap-reports
+          chmod -R 777 zap-reports
           docker run \
-            --network=${{ job.services.web.network }} \
+            --network="host" \
             -v ${{ github.workspace }}/zap-config.yaml:/zap/wrk/zap-config.yaml \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk/zap-reports \
-            owasp/zap2docker-stable zap.sh \
+            ghcr.io/zaproxy/zaproxy:stable zap.sh \
             -cmd -autorun /zap/wrk/zap-config.yaml
+
+      - name: Stop containers
+        if: always()
+        run: docker stop web || true
 
       - name: Upload ZAP report
         if: always()
@@ -110,3 +116,98 @@ jobs:
         with:
           name: zap-report
           path: zap-reports/
+
+  analyze-security:
+    needs:
+      - build-test-sast
+      - trivy-scan
+      - zap-dast
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Analyze security reports
+        id: analyze
+        run: |
+          echo "Analyzing security reports..."
+
+          BANDIT=$(jq '.results | length' reports/sast-and-dep-reports/bandit-report.json)
+          AUDIT=$(jq '.dependencies | length' reports/sast-and-dep-reports/dep-report.json)
+
+          TRIVY_HIGH=$(grep -c "HIGH" reports/trivy-report/trivy-report.txt || true)
+          TRIVY_CRIT=$(grep -c "CRITICAL" reports/trivy-report/trivy-report.txt || true)
+
+          ZAP_HIGH=$(grep -c "High (High)" reports/zap-report/zap-report.html || true)
+
+          echo "bandit=$BANDIT" >> $GITHUB_OUTPUT
+          echo "audit=$AUDIT" >> $GITHUB_OUTPUT
+          echo "trivy_high=$TRIVY_HIGH" >> $GITHUB_OUTPUT
+          echo "trivy_crit=$TRIVY_CRIT" >> $GITHUB_OUTPUT
+          echo "zap_high=$ZAP_HIGH" >> $GITHUB_OUTPUT
+
+          echo "=== SECURITY SUMMARY ===" > security-summary.txt
+          echo "Bandit (SAST) findings: $BANDIT" >> security-summary.txt
+          echo "pip-audit dependency issues: $AUDIT" >> security-summary.txt
+          echo "Trivy HIGH vulnerabilities: $TRIVY_HIGH" >> security-summary.txt
+          echo "Trivy CRITICAL vulnerabilities: $TRIVY_CRIT" >> security-summary.txt
+          echo "ZAP HIGH alerts: $ZAP_HIGH" >> security-summary.txt
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary
+          path: security-summary.txt
+
+  notify-security:
+    needs: analyze-security
+    if: >
+      needs.analyze-security.outputs.trivy_high != '0' ||
+      needs.analyze-security.outputs.trivy_crit != '0' ||
+      needs.analyze-security.outputs.zap_high != '0' ||
+      needs.analyze-security.outputs.bandit != '0' ||
+      needs.analyze-security.outputs.audit != '0'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: security-summary
+          path: .
+
+      - name: Send security alert email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: " HIGH Vulnerability Alert — DevSecOps Pipeline"
+          to: ${{ secrets.MAIL_TO }}
+          from: "DevSecOps Pipeline <${{ secrets.MAIL_USERNAME }}>"
+          body: |
+           DevSecOps Security Alert!
+
+            High severity issues were detected in the latest CI run.
+
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+
+            === Summary ===
+            $(cat security-summary.txt)
+
+             Download full security reports:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Stay safe and secure.
