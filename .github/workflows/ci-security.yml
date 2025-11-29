@@ -98,6 +98,7 @@ jobs:
       - name: Run OWASP ZAP DAST scan
         run: |
           mkdir -p zap-reports
+          chmod -R 777 zap-reports
           docker run \
             --network="host" \
             -v ${{ github.workspace }}/zap-config.yaml:/zap/wrk/zap-config.yaml \
