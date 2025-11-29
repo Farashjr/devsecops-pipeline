@@ -1,0 +1,37 @@
+env:
+  contexts:
+    - name: "devsecops-app"
+      urls:
+        - "http://localhost:5000"
+      includePaths:
+        - "http://localhost:5000/.*"
+      excludePaths: []
+
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: "spider"
+    parameters:
+      context: "devsecops-app"
+      maxDuration: 2
+
+  - type: "passiveScan-wait"
+    parameters:
+      maxDuration: 2
+
+  - type: "activeScan"
+    parameters:
+      context: "devsecops-app"
+      maxRuleDurationInMins: 2
+      maxScanDurationInMins: 5
+
+  - type: "report"
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk/zap-reports"
+      reportFile: "zap-report.html"
+      reportTitle: "OWASP ZAP Security Scan Report"
+      reportDescription: "Automated DAST scan of the Flask application"
