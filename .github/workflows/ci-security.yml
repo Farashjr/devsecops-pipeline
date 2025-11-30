@@ -124,6 +124,13 @@ jobs:
       - zap-dast
     runs-on: ubuntu-latest
 
+    outputs:
+      bandit: ${{ steps.analyze.outputs.bandit }}
+      audit: ${{ steps.analyze.outputs.audit }}
+      trivy_high: ${{ steps.analyze.outputs.trivy_high }}
+      trivy_crit: ${{ steps.analyze.outputs.trivy_crit }}
+      zap_high: ${{ steps.analyze.outputs.zap_high }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -143,10 +150,8 @@ jobs:
 
           BANDIT=$(jq '.results | length' reports/sast-and-dep-reports/bandit-report.json)
           AUDIT=$(jq '.dependencies | length' reports/sast-and-dep-reports/dep-report.json)
-
           TRIVY_HIGH=$(grep -c "HIGH" reports/trivy-report/trivy-report.txt || true)
           TRIVY_CRIT=$(grep -c "CRITICAL" reports/trivy-report/trivy-report.txt || true)
-
           ZAP_HIGH=$(grep -c "High (High)" reports/zap-report/zap-report.html || true)
 
           echo "bandit=$BANDIT" >> $GITHUB_OUTPUT
