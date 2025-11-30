@@ -1,25 +1,65 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>User Lookup</title>
+    <title>Vulnerable Search App</title>
+
+    <!-- ❗ Missing Security Headers (ZAP detects this) -->
+    <meta charset="UTF-8">
+
+    <!-- ❗ Inline JS — susceptible to DOM XSS -->
+    <script>
+        function search() {
+            const q = document.getElementById("query").value;
+
+            // ❗ DOM XSS vulnerability (unsafe sink)
+            document.getElementById("output").innerHTML = "You searched for: " + q;
+
+            window.location = "/?q=" + q;
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+    </style>
 </head>
 <body>
-  <h1>User Lookup</h1>
-  <form method="get" action="/">
-    <input name="q" placeholder="username" value="{{ q }}">
-    <button type="submit">Search</button>
-  </form>
+    <h1>Vulnerable Flask Search App</h1>
 
-  {% if users %}
-    <h2>Results</h2>
+    <!-- ❗ Reflected XSS vulnerability -->
+    <p><strong>Current Query:</strong> {{ q|safe }}</p>
+
+    <input id="query" type="text" placeholder="Search username..." value="{{ q|safe }}">
+    <button onclick="search()">Search</button>
+
+    <hr>
+
+    <h2>Search Results</h2>
+    <div id="output"></div>
+
     <ul>
-      {% for u in users %}
-        <li>{{ u['username'] }} – {{ u['email'] }}</li>
-      {% endfor %}
+        {% for user in users %}
+            <li>
+                <!-- ❗ Vulnerable to stored/reflected XSS -->
+                Username: {{ user["username"]|safe }} — Email: {{ user["email"]|safe }}
+            </li>
+        {% else %}
+            <li>No users found</li>
+        {% endfor %}
     </ul>
-  {% elif q %}
-    <p>No users found.</p>
-  {% endif %}
+
+    <hr>
+
+    <h2>Test payloads</h2>
+    <ul>
+        <li><a href="/?q=<script>alert(1)</script>">Reflected XSS Test</a></li>
+        <li><a href="/ping?ip=ls">Command Injection Test</a></li>
+        <li><a href="/read?file=../../app.py">Directory Traversal Test</a></li>
+        <li><a href="/user?id=1">IDOR Test (User 1)</a></li>
+        <li><a href="/user?id=999">IDOR Test (Invalid User)</a></li>
+    </ul>
+
 </body>
 </html>
