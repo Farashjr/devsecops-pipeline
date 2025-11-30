@@ -3,4 +3,3 @@ gunicorn
 pytest
 bandit
 pip-audit
-flask==0.10
