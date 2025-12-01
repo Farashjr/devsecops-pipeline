@@ -81,6 +81,54 @@ App will be available at: [http://localhost:5000](http://localhost:5000)
 
 ---
 
+## 👩‍💻 Getting Started as a Collaborator
+
+If you'd like to work on this project yourself or collaborate:
+
+1. **Fork the repository:**  
+   Click the "Fork" button (top right) to create your own copy of this repo.
+
+2. **Clone your fork:**  
+   ```sh
+   git clone https://github.com/<your-username>/devsecops-pipeline.git
+   cd devsecops-pipeline
+   ```
+
+3. **Set up the project:**  
+   - Install dependencies:  
+     ```sh
+     pip install -r app/requirements.txt
+     ```
+   - (Optional) Set up a virtual environment:  
+     ```sh
+     python -m venv venv
+     source venv/bin/activate  # On Windows: venv\Scripts\activate
+     ```
+
+4. **Configure email alerts:**  
+   - In your repository settings, add the following secrets if you want email notifications:
+     - `MAIL_USERNAME`: Your Gmail address
+     - `MAIL_PASSWORD`: Your Gmail App Password
+     - `MAIL_TO`: Destination email
+
+5. **Run the Flask app locally:**  
+   ```sh
+   python app/app.py
+   ```
+   Visit [http://localhost:5000](http://localhost:5000) in your browser.
+
+6. **Testing the pipeline:**  
+   Make and push changes to your fork; GitHub Actions will automatically run the CI/CD pipeline.
+
+7. **Contribute back:**  
+   - Open a Pull Request (PR) against the original repo for your improvements or bugfixes.
+   - Please follow established code style and provide clear PR descriptions.
+
+**Need help?**  
+- Open an [Issue](https://github.com/Farashjr/devsecops-pipeline/issues) if you have any questions or need assistance getting the project running.
+
+---
+
 ## 💥 Testing Vulnerabilities
 
 > This project includes an intentionally vulnerable Flask version for pipeline testing.
