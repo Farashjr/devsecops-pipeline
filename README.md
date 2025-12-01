@@ -1,21 +1,20 @@
-📦 DevSecOps Security Pipeline
+# 📦 DevSecOps Security Pipeline
 
-This repository contains a complete DevSecOps CI/CD security pipeline for a Flask application.
-The pipeline runs automated:
+This repository contains a complete DevSecOps CI/CD security pipeline for a **Flask** application.  
+The pipeline runs **automated**:
 
-Unit tests
+- Unit tests  
+- Static Application Security Testing (**SAST**)  
+- Dependency scanning (**SCA**)  
+- Docker image vulnerability scanning  
+- Dynamic Application Security Testing (**DAST**)  
+- Email notifications for HIGH/CRITICAL vulnerabilities  
 
-Static Application Security Testing (SAST)
+---
 
-Dependency scanning (SCA)
+## 🏗️ Pipeline Architecture
 
-Docker image vulnerability scanning
-
-Dynamic Application Security Testing (DAST)
-
-Email notifications for HIGH/CRITICAL vulnerabilities
-
-🏗️ Pipeline Architecture
+```mermaid
 flowchart LR
     A[Push Code] --> B[Unit Tests]
     B --> C[Bandit SAST]
@@ -30,28 +29,27 @@ flowchart LR
     I --> J{High/Critical Findings?}
     J -->|YES| K[Send Email Alert]
     J -->|NO| L[Pipeline Passes]
+```
 
-🛠️ Technologies Used
+---
 
-Flask (Python)
+## 🛠️ Technologies Used
 
-pytest
+- Flask (Python)
+- pytest
+- Bandit
+- pip-audit
+- Docker
+- Trivy
+- OWASP ZAP
+- GitHub Actions
+- SMTP Email Alerts
 
-Bandit
+---
 
-pip-audit
+## 📁 Repository Structure
 
-Docker
-
-Trivy
-
-OWASP ZAP
-
-GitHub Actions
-
-SMTP Email Alerts
-
-📁 Repository Structure
+```
 devsecops-pipeline/
 │
 ├── app/
@@ -65,83 +63,93 @@ devsecops-pipeline/
 ├── zap-config.yaml
 │
 └── .github/workflows/ci-security.yml
+```
 
-▶️ Running the Application Locally
+---
 
-Install dependencies:
+## ▶️ Running the Application Locally
 
+**Install dependencies:**
+```sh
 pip install -r app/requirements.txt
-
-
-Run app:
-
+```
+**Run app:**
+```sh
 python app/app.py
+```
+App will be available at: [http://localhost:5000](http://localhost:5000)
 
+---
 
-App will be available at:
+## 💥 Testing Vulnerabilities
 
-http://localhost:5000
-
-💥 Testing Vulnerabilities
-
-This project includes an intentionally vulnerable Flask version for pipeline testing.
+> This project includes an intentionally vulnerable Flask version for pipeline testing.
 
 You can introduce vulnerabilities such as:
 
-SQL Injection
-db.execute("SELECT * FROM users WHERE username LIKE '%" + q + "%'")
+- **SQL Injection:**  
+  ```python
+  db.execute("SELECT * FROM users WHERE username LIKE '%" + q + "%'")
+  ```
+- **XSS:**  
+  ```python
+  return f"<h1>Hello {request.args.get('name')}</h1>"
+  ```
+Push changes — the pipeline will detect and report them.
 
-XSS
-return f"<h1>Hello {request.args.get('name')}</h1>"
+---
 
+## 📧 Configuring Email Alerts
 
-Push changes → pipeline will detect them.
+Create these GitHub secrets for email notification support:
 
-📧 Configuring Email Alerts
+| Secret         | Description          |
+|----------------|---------------------|
+| MAIL_USERNAME  | Gmail address       |
+| MAIL_PASSWORD  | Gmail App Password  |
+| MAIL_TO        | Destination email   |
 
-Create these GitHub secrets:
-
-Secret	Description
-MAIL_USERNAME	Gmail address
-MAIL_PASSWORD	Gmail App Password
-MAIL_TO	Destination email
-
-Create Gmail App Password here:
+Create Gmail App Password here:  
 https://myaccount.google.com/apppasswords
 
-🧪 Pipeline Stages
+---
 
-1. build-test-sast
+## 🧪 Pipeline Stages
 
-Runs unit tests
+1. **build-test-sast**
+   - Runs unit tests
+   - Bandit SAST
+   - pip-audit dependency scan
+   - Uploads reports
+2. **trivy-scan**
+   - Builds Docker image
+   - Trivy scans for OS & package vulnerabilities
+3. **zap-dast**
+   - Runs app container
+   - OWASP ZAP automated DAST
+   - Uploads HTML report
+4. **analyze-security**
+   - Aggregates Bandit, pip-audit, Trivy, and ZAP results
+   - Generates `security-summary.txt`
+5. **notify-security**
+   - Sends email if HIGH/CRITICAL issues exist
 
-Bandit SAST
+---
 
-pip-audit dependency scan
+## 📣 Contributions
 
-Uploads reports
+Contributions are welcome!  
+Feel free to open issues or pull requests to improve this pipeline.
 
-2. trivy-scan
+---
 
-Builds Docker image
+## 📄 License
 
-Trivy scans OS + package vulnerabilities
+Distributed under the MIT License.  
+See [LICENSE](LICENSE) for more information.
 
-3. zap-dast
+---
 
-Runs app container
+## 🔗 Contact
 
-OWASP ZAP automated DAST
-
-Uploads HTML report
-
-4. analyze-security
-
-Aggregates Bandit, pip-audit, Trivy, ZAP results
-
-Generates security-summary.txt
-
-5. notify-security
-
-Sends email only if HIGH/CRITICAL issues exist
-
+Questions or support: [Farashjr](https://github.com/Farashjr) via GitHub Issues.
